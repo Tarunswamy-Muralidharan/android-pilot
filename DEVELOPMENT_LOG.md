@@ -43,42 +43,141 @@ Both tools abstract over device communication through framework layers (Appium's
 
 ## Implementation Progress
 
-### Phase 1 — MVP (Core ADB + Basic Tools)
-- [ ] `src/adb/client.ts` — ADB executor with device auto-detect
-- [ ] `src/adb/screenshot.ts` — Screencap + resize + JPEG compress pipeline
-- [ ] `src/adb/input.ts` — Tap, swipe, text, keyevent
-- [ ] `src/adb/packages.ts` — am start, pm install
-- [ ] `src/tools/launch.ts` — Launch app
-- [ ] `src/tools/screenshot.ts` — Smart screenshot
-- [ ] `src/tools/tap.ts` — Coordinate-based tap (Phase 1)
-- [ ] `src/tools/type.ts` — Text input
-- [ ] `src/tools/back.ts` — Back button
-- [ ] `src/tools/info.ts` — Device info
-- [ ] `src/tools/shell.ts` — Raw ADB escape hatch
-- [ ] `src/server.ts` + `src/index.ts` — FastMCP server wiring
-- [ ] Build + test with MCP Inspector
+### Phase 1 — MVP (Core ADB + Basic Tools) ✅
+- [x] `src/adb/client.ts` — ADB executor with device auto-detect
+- [x] `src/adb/screenshot.ts` — Screencap + resize + JPEG compress pipeline
+- [x] `src/adb/input.ts` — Tap, swipe, text, keyevent
+- [x] `src/adb/packages.ts` — am start, pm install
+- [x] `src/tools/launch.ts` — Launch app
+- [x] `src/tools/screenshot.ts` — Smart screenshot
+- [x] `src/tools/tap.ts` — Coordinate-based tap (Phase 1)
+- [x] `src/tools/type.ts` — Text input
+- [x] `src/tools/back.ts` — Back button
+- [x] `src/tools/info.ts` — Device info
+- [x] `src/tools/shell.ts` — Raw ADB escape hatch
+- [x] `src/server.ts` + `src/index.ts` — FastMCP server wiring
+- [x] Build + test with MCP Inspector
 
-### Phase 2 — Smart Targeting (Hierarchy + Compose)
-- [ ] `src/adb/hierarchy.ts` — UI hierarchy XML parser
-- [ ] `src/filters/app-scope.ts` — System UI filter by package
-- [ ] `src/filters/compose.ts` — Compose testTag extraction
-- [ ] `src/tools/find.ts` — Filtered element search
-- [ ] `src/tools/hierarchy.ts` — Compact view tree tool
-- [ ] Upgrade `tap.ts` — Add text/testTag/index strategies
-- [ ] Test: verify "Home" tap scopes to app only
+### Phase 2 — Smart Targeting (Hierarchy + Compose) ✅
+- [x] `src/adb/hierarchy.ts` — UI hierarchy XML parser
+- [x] `src/filters/app-scope.ts` — System UI filter by package
+- [x] `src/filters/compose.ts` — Compose testTag extraction
+- [x] `src/tools/find.ts` — Filtered element search
+- [x] `src/tools/hierarchy.ts` — Compact view tree tool
+- [x] Upgrade `tap.ts` — Add text/testTag/index strategies
+- [ ] Test: verify "Home" tap scopes to app only *(pending — needs MCP restart)*
 
-### Phase 3 — Smart Tools (Wait + Batch + Assert)
-- [ ] `src/util/poll.ts` — Poll-until-condition helper
-- [ ] `src/tools/wait.ts` — Wait for element/text/idle
-- [ ] `src/tools/assert.ts` — Verify element state
-- [ ] `src/tools/scroll.ts` — Direction + scrollUntilVisible
-- [ ] `src/tools/act.ts` — Batch action tool
-- [ ] `src/tools/swipe.ts` — Custom swipe
-- [ ] `src/tools/home.ts` — System home
-- [ ] `src/tools/recents.ts` — App switcher
-- [ ] `src/tools/install.ts` — Install APK
-- [ ] `src/util/token-budget.ts` — Output size guards
-- [ ] End-to-end test: run full JustPass test suite with android-pilot
+### Phase 3 — Smart Tools (Wait + Batch + Assert) ✅
+- [x] `src/util/poll.ts` — Poll-until-condition helper
+- [x] `src/tools/wait.ts` — Wait for element/text/idle
+- [x] `src/tools/assert.ts` — Verify element state
+- [x] `src/tools/scroll.ts` — Direction + scrollUntilVisible
+- [x] `src/tools/act.ts` — Batch action tool
+- [x] `src/tools/swipe.ts` — Custom swipe
+- [x] `src/tools/home.ts` — System home
+- [x] `src/tools/recents.ts` — App switcher
+- [x] `src/tools/install.ts` — Install APK
+- [x] `src/util/token-budget.ts` — Output size guards
+- [ ] End-to-end test: run full JustPass test suite with android-pilot *(pending)*
+
+---
+
+## Live Testing Session — April 12, 2026 (Session 2)
+
+### Approach
+After restarting Claude Code to load the MCP server, began testing tools against a real Moto G54 (Android 13) with JustPass already installed.
+
+### Test Results
+
+#### ✅ info tool — PASS
+- Correctly returned device model ("moto g54 5G"), serial, Android 13, screen 1080x2400.
+- First real-device validation that ADB executor and device auto-detect work.
+
+#### ✅ screenshot tool — PASS
+- Returned inline JPEG image in a single tool call — no temp files, no multi-step workaround.
+- Confirmed the sharp pipeline (screencap → resize 540px → JPEG q60) works end-to-end.
+- This alone solves Appium's worst problem (4 tool calls per screenshot, 94K-283K chars each).
+
+#### ✅ launch tool — PASS
+- Successfully launched JustPass (`com.example.attendancewidgetlaudea`) using monkey fallback.
+- `am start` with category LAUNCHER failed (no exported launcher activity), but monkey fallback injected the event and the app opened.
+- This solves Maestro's #1 failure (launch_app: 100% failure rate).
+
+#### ❌ hierarchy / find tools — BLOCKED by foreground detection bug
+- Both returned "0 elements" because they were scoping to the wrong package.
+- Root cause: `getForegroundPackage()` was reporting YouTube as the foreground app while JustPass was actually on screen.
+
+### Bug #1: Wrong Foreground Package Detection
+
+#### Problem
+`getForegroundPackage()` in `src/adb/client.ts` used `dumpsys activity top` and grabbed the **first** `TASK` regex match. On the Moto G54, this command returned a stale list of background task records:
+
+```
+TASK 10499:app.revanced.android.youtube id=17079   ← first match (WRONG)
+TASK 10224:com.android.vending id=17076
+TASK 10521:com.google.android.apps.giant id=17081
+TASK 10251:com.google.android.apps.photos id=17082
+```
+
+JustPass (`com.example.attendancewidgetlaudea`) **didn't appear at all** in this output despite being the visible, active foreground app. The `dumpsys activity top` command is unreliable for determining the actual foreground activity on Android 13.
+
+#### Investigation
+Tested alternative ADB commands to find a reliable foreground detection method:
+
+```bash
+# Unreliable — doesn't list all running activities
+adb shell dumpsys activity top | grep -E "TASK|ACTIVITY"
+
+# Reliable — always shows the actual resumed activity
+adb shell dumpsys activity activities | grep -E "topResumedActivity"
+# → topResumedActivity=ActivityRecord{8fdd60b u0 com.example.attendancewidgetlaudea/.MainActivity t17085}
+```
+
+The `topResumedActivity` field from `dumpsys activity activities` correctly identified JustPass every time.
+
+#### Fix Applied
+Changed both `getForegroundPackage()` and `getDeviceInfo()` in `src/adb/client.ts`:
+
+**Before:**
+```typescript
+// Used unreliable "dumpsys activity top" + first TASK match
+const dump = await adbShell("dumpsys", "activity", "top");
+const match = dump.match(/TASK\s+(\S+)/);
+return match?.[1]?.split("/")?.[0] ?? "unknown";
+```
+
+**After:**
+```typescript
+// Uses reliable "dumpsys activity activities" + topResumedActivity
+const dump = await adbShell("dumpsys", "activity", "activities");
+const match = dump.match(/topResumedActivity=ActivityRecord\{[^\s]+\s+\S+\s+([^\s/}]+)/);
+return match?.[1] ?? "unknown";
+```
+
+#### Impact
+This fix is **critical** — hierarchy, find, tap (text/testTag/index), assert, wait, and act all depend on app-scoping via `getForegroundPackage()`. Without this fix, every smart targeting tool returns empty results.
+
+#### Status
+- Code fixed and compiled cleanly (zero TypeScript errors)
+- **Not yet verified** — MCP server needs restart to load new compiled JS
+- After restart, all blocked tools (hierarchy, find, tap-by-text, act) should work
+
+### Challenges & Obstacles Summary
+
+| Challenge | How it was discovered | How it was overcome |
+|-----------|----------------------|-------------------|
+| Package name mismatch | `launch com.justpass.app` failed with "No activities found" | Used `pm list packages` via shell tool to find real package name: `com.example.attendancewidgetlaudea` |
+| Shell pipe parsing | `pm list packages \| grep just` failed — pipe was passed to ADB | Ran `pm list packages` without grep, searched output manually |
+| Wrong foreground app | hierarchy/find returned 0 elements while JustPass was on screen | Investigated with `dumpsys activity top` (unreliable), then `dumpsys activity activities` (reliable `topResumedActivity`) |
+| MCP server caching | Fix compiled but info still returned old results | Identified that Node.js MCP server caches compiled JS in memory — requires process restart |
+
+### Next Steps (After MCP Restart)
+1. Verify foreground detection fix with `info`
+2. Test hierarchy + find on JustPass home screen
+3. Test tap-by-text navigation (tap "CA Marks" tab)
+4. Test act (batch): multi-step flow in one call
+5. Test wait + assert for async content
+6. Run full JustPass test suite and benchmark
 
 ---
 

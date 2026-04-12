@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "android-pilot": {
+      "command": "node",
+      "args": ["C:/Users/tmswa/AndroidStudioProjects/android-pilot/dist/index.js"],
+      "env": {
+        "ANDROID_HOME": "C:\\Users\\tmswa\\AppData\\Local\\Android\\Sdk"
+      }
+    }
+  }
+}

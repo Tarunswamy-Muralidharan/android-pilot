@@ -81,18 +81,64 @@ function flattenNodes(node: any, elements: UiElement[], counter: { i: number }):
   }
 }
 
+async function disableAnimations(): Promise<void> {
+  await Promise.all([
+    adbShell("settings", "put", "global", "window_animation_scale", "0"),
+    adbShell("settings", "put", "global", "transition_animation_scale", "0"),
+    adbShell("settings", "put", "global", "animator_duration_scale", "0"),
+  ]);
+}
+
+async function restoreAnimations(): Promise<void> {
+  await Promise.all([
+    adbShell("settings", "put", "global", "window_animation_scale", "1"),
+    adbShell("settings", "put", "global", "transition_animation_scale", "1"),
+    adbShell("settings", "put", "global", "animator_duration_scale", "1"),
+  ]);
+}
+
 export async function getHierarchy(): Promise<UiElement[]> {
-  const xml = await adbShell("uiautomator", "dump", "/dev/tty");
-  // uiautomator dump outputs XML preceded by "UI hierachy dumped to: /dev/tty"
-  const xmlStart = xml.indexOf("<?xml");
-  const cleanXml = xmlStart >= 0 ? xml.slice(xmlStart) : xml;
+  const dumpPath = "/sdcard/android-pilot-dump.xml";
+  const maxRetries = 3;
 
-  const parsed = parser.parse(cleanXml);
-  const root = parsed?.hierarchy?.node?.[0] ?? parsed?.hierarchy?.node ?? parsed?.hierarchy;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const result = await adbShell("uiautomator", "dump", dumpPath);
 
-  const elements: UiElement[] = [];
-  flattenNodes(root, elements, { i: 0 });
-  return elements;
+    if (result.includes("ERROR") || result.includes("error")) {
+      if (attempt === 0) {
+        // First failure — disable animations and retry
+        await disableAnimations();
+        await new Promise((r) => setTimeout(r, 500));
+        continue;
+      }
+      if (attempt < maxRetries - 1) {
+        await new Promise((r) => setTimeout(r, 800));
+        continue;
+      }
+      // All retries exhausted — restore animations before throwing
+      await restoreAnimations();
+      throw new Error(`uiautomator dump failed after ${maxRetries} attempts: ${result}`);
+    }
+
+    // Read the dumped XML from the file
+    const xml = await adbShell("cat", dumpPath);
+
+    // Restore animations now that we have the dump
+    restoreAnimations().catch(() => {}); // fire-and-forget
+
+    const xmlStart = xml.indexOf("<?xml");
+    const cleanXml = xmlStart >= 0 ? xml.slice(xmlStart) : xml;
+
+    const parsed = parser.parse(cleanXml);
+    const root = parsed?.hierarchy?.node?.[0] ?? parsed?.hierarchy?.node ?? parsed?.hierarchy;
+
+    const elements: UiElement[] = [];
+    flattenNodes(root, elements, { i: 0 });
+    return elements;
+  }
+
+  await restoreAnimations().catch(() => {});
+  return [];
 }
 
 export async function getAppScopedHierarchy(

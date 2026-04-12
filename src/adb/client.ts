@@ -94,7 +94,7 @@ export async function getDeviceInfo(): Promise<{
     adbShell("getprop", "ro.product.model"),
     adbShell("getprop", "ro.build.version.release"),
     adbShell("wm", "size"),
-    adbShell("dumpsys", "activity", "top"),
+    adbShell("dumpsys", "activity", "activities"),
   ]);
 
   // Parse screen size: "Physical size: 1080x2400"
@@ -102,11 +102,10 @@ export async function getDeviceInfo(): Promise<{
   const width = sizeMatch ? parseInt(sizeMatch[1]) : 1080;
   const height = sizeMatch ? parseInt(sizeMatch[2]) : 2400;
 
-  // Parse foreground activity from dumpsys
-  const taskMatch = activityDump.match(/TASK\s+(\S+)/);
-  const actMatch = activityDump.match(/ACTIVITY\s+(\S+)/);
-  const foregroundPackage = taskMatch?.[1]?.split("/")?.[0] ?? "unknown";
-  const foregroundActivity = actMatch?.[1] ?? "unknown";
+  // Parse foreground from topResumedActivity (most reliable on Android 10+)
+  const resumedMatch = activityDump.match(/topResumedActivity=ActivityRecord\{[^\s]+\s+\S+\s+([^\s}]+)/);
+  const foregroundActivity = resumedMatch?.[1] ?? "unknown";
+  const foregroundPackage = foregroundActivity.split("/")?.[0] ?? "unknown";
 
   return {
     serial,
@@ -119,7 +118,7 @@ export async function getDeviceInfo(): Promise<{
 }
 
 export async function getForegroundPackage(): Promise<string> {
-  const dump = await adbShell("dumpsys", "activity", "top");
-  const match = dump.match(/TASK\s+(\S+)/);
-  return match?.[1]?.split("/")?.[0] ?? "unknown";
+  const dump = await adbShell("dumpsys", "activity", "activities");
+  const match = dump.match(/topResumedActivity=ActivityRecord\{[^\s]+\s+\S+\s+([^\s/}]+)/);
+  return match?.[1] ?? "unknown";
 }
