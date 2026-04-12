@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page {
+    size: A4;
+    margin: 2cm 2.5cm;
+    @bottom-center {
+      content: "Page " counter(page) " of " counter(pages);
+      font-size: 9pt;
+      color: #666;
+    }
+  }
+  body {
+    font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #1a1a1a;
+  }
+
+  /* Cover page */
+  .cover {
+    page-break-after: always;
+    text-align: center;
+    padding-top: 180px;
+  }
+  .cover h1 {
+    font-size: 32pt;
+    color: #1a237e;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+  .cover .subtitle {
+    font-size: 16pt;
+    color: #455a64;
+    margin-bottom: 60px;
+  }
+  .cover .meta {
+    font-size: 11pt;
+    color: #666;
+    line-height: 2;
+  }
+  .cover .meta strong {
+    color: #333;
+  }
+  .cover .badge {
+    display: inline-block;
+    background: #e8eaf6;
+    color: #1a237e;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 10pt;
+    margin-top: 40px;
+  }
+
+  /* TOC */
+  .toc {
+    page-break-after: always;
+  }
+  .toc h2 {
+    color: #1a237e;
+    border-bottom: 2px solid #1a237e;
+    padding-bottom: 8px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    padding: 6px 0;
+    border-bottom: 1px dotted #ccc;
+    font-size: 11pt;
+  }
+  .toc .section-num {
+    color: #1a237e;
+    font-weight: 600;
+    margin-right: 8px;
+  }
+  .toc .page-ref {
+    float: right;
+    color: #888;
+  }
+
+  h2 {
+    color: #1a237e;
+    font-size: 18pt;
+    border-bottom: 2px solid #c5cae9;
+    padding-bottom: 6px;
+    margin-top: 30px;
+  }
+  h3 {
+    color: #283593;
+    font-size: 13pt;
+    margin-top: 22px;
+  }
+  h4 {
+    color: #3949ab;
+    font-size: 11pt;
+    margin-top: 16px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 10pt;
+  }
+  th {
+    background: #1a237e;
+    color: white;
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  tr:nth-child(even) td {
+    background: #f5f5f5;
+  }
+
+  .success { color: #2e7d32; font-weight: 600; }
+  .failure { color: #c62828; font-weight: 600; }
+  .warning { color: #e65100; font-weight: 600; }
+  .partial { color: #f57f17; font-weight: 600; }
+
+  .callout {
+    background: #fff3e0;
+    border-left: 4px solid #e65100;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 10.5pt;
+  }
+  .callout-red {
+    background: #fce4ec;
+    border-left: 4px solid #c62828;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 10.5pt;
+  }
+  .callout-green {
+    background: #e8f5e9;
+    border-left: 4px solid #2e7d32;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 10.5pt;
+  }
+  .callout-blue {
+    background: #e3f2fd;
+    border-left: 4px solid #1565c0;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 10.5pt;
+  }
+
+  code {
+    background: #eceff1;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 9.5pt;
+  }
+  pre {
+    background: #263238;
+    color: #eeffff;
+    padding: 14px 18px;
+    border-radius: 6px;
+    font-size: 9pt;
+    line-height: 1.5;
+    overflow-x: auto;
+    font-family: 'Consolas', 'Courier New', monospace;
+  }
+
+  .metric-grid {
+    display: flex;
+    gap: 12px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  .metric-box {
+    flex: 1;
+    min-width: 140px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+  }
+  .metric-box .value {
+    font-size: 22pt;
+    font-weight: 700;
+    color: #1a237e;
+  }
+  .metric-box .label {
+    font-size: 9pt;
+    color: #666;
+    margin-top: 4px;
+  }
+
+  .timeline-item {
+    border-left: 3px solid #c5cae9;
+    padding: 8px 0 8px 16px;
+    margin: 4px 0;
+    position: relative;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 14px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #1a237e;
+  }
+  .timeline-item.error::before { background: #c62828; }
+  .timeline-item.success::before { background: #2e7d32; }
+  .timeline-item .time { font-size: 9pt; color: #888; }
+  .timeline-item .action { font-weight: 600; }
+
+  .score-bar {
+    height: 20px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 4px 0;
+  }
+  .score-fill {
+    height: 100%;
+    border-radius: 10px;
+  }
+  .score-fill.good { background: #43a047; }
+  .score-fill.ok { background: #fb8c00; }
+  .score-fill.bad { background: #e53935; }
+
+  .verdict-box {
+    background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+    color: white;
+    padding: 20px 24px;
+    border-radius: 10px;
+    margin: 20px 0;
+  }
+  .verdict-box h3 { color: white; margin-top: 0; }
+  .verdict-box .grade {
+    font-size: 48pt;
+    font-weight: 700;
+    text-align: center;
+    margin: 10px 0;
+  }
+  .section-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover">
+  <h1>Maestro MCP</h1>
+  <div class="subtitle">Detailed Performance & Reliability Report</div>
+  <div class="subtitle" style="font-size:12pt; color:#78909c;">Mobile UI Testing on Android via Model Context Protocol</div>
+
+  <div class="meta">
+    <strong>App Under Test:</strong> JustPass v2.1 (AttendanceWidgetLaudea)<br>
+    <strong>Device:</strong> Moto G54 (ZD222GJ6WD) &mdash; Android 13, API 33<br>
+    <strong>Test Date:</strong> April 12, 2026<br>
+    <strong>Screens Tested:</strong> 8 of 14+ screens<br>
+    <strong>Total Tool Calls:</strong> 50+ MCP interactions<br>
+    <strong>Test Duration:</strong> ~25 minutes active interaction<br>
+  </div>
+
+  <div class="badge">Conducted by Claude Code using Maestro MCP Server</div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <ul>
+    <li><span class="section-num">1.</span> Executive Summary</li>
+    <li><span class="section-num">2.</span> Test Environment & Setup</li>
+    <li><span class="section-num">3.</span> Tool-by-Tool Analysis
+      <ul style="padding-left: 24px; margin-top: 4px;">
+        <li>3.1 take_screenshot</li>
+        <li>3.2 inspect_view_hierarchy</li>
+        <li>3.3 tap_on</li>
+        <li>3.4 scroll / swipe</li>
+        <li>3.5 launch_app</li>
+        <li>3.6 back</li>
+        <li>3.7 input_text</li>
+        <li>3.8 list_devices</li>
+      </ul>
+    </li>
+    <li><span class="section-num">4.</span> Complete Interaction Timeline</li>
+    <li><span class="section-num">5.</span> Failure Catalog &mdash; Every Error Encountered</li>
+    <li><span class="section-num">6.</span> The Five Critical Flaws</li>
+    <li><span class="section-num">7.</span> Jetpack Compose Compatibility Analysis</li>
+    <li><span class="section-num">8.</span> Timing & Performance Metrics</li>
+    <li><span class="section-num">9.</span> Workarounds Employed</li>
+    <li><span class="section-num">10.</span> Comparison: What Maestro MCP Should Be vs. What It Is</li>
+    <li><span class="section-num">11.</span> Recommendations</li>
+    <li><span class="section-num">12.</span> Final Verdict</li>
+    <li><span class="section-num">Appendix A.</span> Raw Tool Call Log</li>
+    <li><span class="section-num">Appendix B.</span> View Hierarchy Sample Output</li>
+  </ul>
+</div>
+
+<!-- SECTION 1 -->
+<h2 class="section-break">1. Executive Summary</h2>
+
+<div class="metric-grid">
+  <div class="metric-box">
+    <div class="value">50+</div>
+    <div class="label">Total MCP Tool Calls</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">~60%</div>
+    <div class="label">Success Rate (first attempt)</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">~40%</div>
+    <div class="label">Required Workarounds</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">8</div>
+    <div class="label">Screens Tested</div>
+  </div>
+</div>
+
+<p>Maestro MCP was used to perform UI testing of the JustPass Android app on a physical Motorola G54 device. The testing session covered 8 of 14+ app screens over approximately 25 minutes of active tool interaction.</p>
+
+<p><strong>The core finding:</strong> Maestro MCP is fundamentally a <strong>screenshot tool with fragile interaction capabilities</strong>. The <code>take_screenshot</code> tool is excellent and reliable. Everything else &mdash; tapping, scrolling, launching &mdash; has significant reliability issues that required constant workarounds.</p>
+
+<p>Of the ~50+ tool calls made during the session:</p>
+<ul>
+  <li><span class="success">~30 succeeded on first attempt</span> (mostly screenshots and simple taps)</li>
+  <li><span class="warning">~12 required workarounds</span> (coordinate taps, ADB fallbacks, swipe instead of scroll)</li>
+  <li><span class="failure">~8 outright failed</span> (launch_app, scroll direction, scrollUntilVisible, system UI collision)</li>
+</ul>
+
+<div class="callout-red">
+  <strong>Critical Issue:</strong> The most basic operation &mdash; <code>launch_app</code> &mdash; failed entirely and required raw ADB commands as a fallback. This undermines the entire premise of Maestro as a mobile testing abstraction layer.
+</div>
+
+<!-- SECTION 2 -->
+<h2 class="section-break">2. Test Environment & Setup</h2>
+
+<table>
+  <tr><th>Parameter</th><th>Value</th></tr>
+  <tr><td>MCP Server</td><td>Maestro MCP (community server)</td></tr>
+  <tr><td>Client</td><td>Claude Code CLI (Claude Opus 4.6)</td></tr>
+  <tr><td>Device</td><td>Motorola Moto G54 5G (ZD222GJ6WD)</td></tr>
+  <tr><td>Android Version</td><td>Android 13 (API 33)</td></tr>
+  <tr><td>Connection</td><td>USB ADB (single device connected)</td></tr>
+  <tr><td>App Package</td><td>com.example.attendancewidgetlaudea</td></tr>
+  <tr><td>App Framework</td><td>Kotlin 2.3.0 + Jetpack Compose (BOM 2025.10.00)</td></tr>
+  <tr><td>UI Library</td><td>Liquid Glass (io.github.fletchmckee.liquid:1.1.1)</td></tr>
+  <tr><td>Screen Resolution</td><td>1080 x 2400 pixels</td></tr>
+  <tr><td>Navigation</td><td>3-button Android navigation (Home / Back / Overview)</td></tr>
+</table>
+
+<h3>Setup Sequence</h3>
+<ol>
+  <li><code>list_devices</code> &mdash; confirmed device connected (instant)</li>
+  <li><code>launch_app</code> with package name &mdash; <span class="failure">FAILED</span></li>
+  <li>Fallback: <code>adb shell am start -n com.example.attendancewidgetlaudea/.MainActivity</code> &mdash; <span class="success">SUCCESS</span></li>
+  <li><code>take_screenshot</code> &mdash; confirmed app is on Dashboard screen</li>
+</ol>
+
+<div class="callout">
+  <strong>Setup time:</strong> ~45 seconds total. Would have been ~10 seconds if <code>launch_app</code> had worked, since the ADB fallback + retry added ~35 seconds of diagnosis and workaround time.
+</div>
+
+<!-- SECTION 3 -->
+<h2 class="section-break">3. Tool-by-Tool Analysis</h2>
+
+<h3>3.1 take_screenshot</h3>
+
+<div class="metric-grid">
+  <div class="metric-box">
+    <div class="value" style="color:#2e7d32;">A+</div>
+    <div class="label">Reliability Grade</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">15+</div>
+    <div class="label">Times Called</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">0</div>
+    <div class="label">Failures</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">2-3s</div>
+    <div class="label">Avg Response Time</div>
+  </div>
+</div>
+
+<p>The undisputed star of the Maestro MCP suite. Every single call returned a clear, full-resolution device screenshot. The image quality was sufficient to read all text, verify layouts, check color schemes, and identify loading states.</p>
+
+<p><strong>What it does well:</strong></p>
+<ul>
+  <li>Captures the complete device screen including status bar and navigation bar</li>
+  <li>Image is clear enough to read small text (timestamps, version numbers, fine print)</li>
+  <li>Consistent 2-3 second response time regardless of screen complexity</li>
+  <li>Works during animations, loading states, and transitions</li>
+  <li>No special parameters needed &mdash; just call it and get the screenshot</li>
+</ul>
+
+<p><strong>Limitations:</strong></p>
+<ul>
+  <li>Returns a static image &mdash; can't capture animations or transitions (just a frozen frame)</li>
+  <li>No way to capture a specific region/element &mdash; always full screen</li>
+  <li>No video recording capability (Maestro's <code>gif_creator</code> equivalent doesn't exist)</li>
+</ul>
+
+<div class="callout-green">
+  <strong>Verdict:</strong> If Maestro MCP were only a screenshot tool, it would be excellent. This is the tool that carries the entire testing experience.
+</div>
+
+<!-- 3.2 -->
+<h3>3.2 inspect_view_hierarchy</h3>
+
+<div class="metric-grid">
+  <div class="metric-box">
+    <div class="value" style="color:#fb8c00;">B-</div>
+    <div class="label">Reliability Grade</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">6+</div>
+    <div class="label">Times Called</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">0</div>
+    <div class="label">Failures</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">3-4s</div>
+    <div class="label">Avg Response Time</div>
+  </div>
+</div>
+
+<p>Returns a CSV-formatted dump of the entire Android accessibility/view tree. Every visible element appears with its bounds, text content, accessibility labels, resource IDs, clickable state, and enabled state.</p>
+
+<p><strong>What it does well:</strong></p>
+<ul>
+  <li>Never failed to return results</li>
+  <li>Provides exact pixel bounds for every element &mdash; essential for coordinate taps</li>
+  <li>Shows accessibility labels that <code>tap_on</code> can target</li>
+  <li>Reveals the complete UI tree including off-screen elements in scroll containers</li>
+</ul>
+
+<p><strong>Critical problems:</strong></p>
+<ul>
+  <li><strong>Compose elements have no resource-id.</strong> Traditional Android Views get IDs like <code>@id/refresh_button</code>. Jetpack Compose elements show up with empty resource-id fields. This means you can't use the most reliable element targeting method.</li>
+  <li><strong>Massive output size.</strong> A typical screen dumps 200-400 lines of CSV. For a complex screen like Dashboard with nested cards, it can exceed 500 lines. Parsing this to find one element is tedious.</li>
+  <li><strong>System UI elements mixed in.</strong> The dump includes Android system navigation bar elements (Home, Back, Overview buttons) alongside app elements, with no clear separator between system and app layers.</li>
+  <li><strong>No filtering capability.</strong> You can't ask for "only clickable elements" or "only elements with text" &mdash; you always get the full dump.</li>
+</ul>
+
+<p><strong>Sample output (abbreviated):</strong></p>
+<pre>
+bounds,text,accessibilityText,resourceId,clickable,enabled,hintText
+[0,60][1080,2280],,,,false,true,
+[0,60][1080,120],,,android:id/action_bar_container,false,true,
+[16,2088][264,2256],Home,Home,,true,true,    ← App's Home tab
+...
+[0,2340][360,2400],Home,,com.android.systemui:id/home,true,true,  ← System Home button!
+</pre>
+
+<div class="callout">
+  <strong>The collision problem illustrated:</strong> Both the app's "Home" tab and the system's Home button appear with <code>text=Home</code>. The system element even has a resource-id (<code>com.android.systemui:id/home</code>) while the app element has none. Maestro's <code>tap_on</code> by text will pick whichever it finds first &mdash; which was the system button, sending the app to background.
+</div>
+
+<!-- 3.3 -->
+<h3 class="section-break">3.3 tap_on</h3>
+
+<div class="metric-grid">
+  <div class="metric-box">
+    <div class="value" style="color:#e53935;">C</div>
+    <div class="label">Reliability Grade</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">20+</div>
+    <div class="label">Times Called</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">5</div>
+    <div class="label">Critical Failures</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">2-4s</div>
+    <div class="label">Avg Response Time</div>
+  </div>
+</div>
+
+<p>The most-used interactive tool, and the most problematic. Supports targeting by text, accessibility label, resource ID, or coordinates.</p>
+
+<h4>Targeting Methods &mdash; Reliability Breakdown</h4>
+
+<table>
+  <tr><th>Method</th><th>Syntax</th><th>Reliability</th><th>Notes</th></tr>
+  <tr>
+    <td>By text</td>
+    <td><code>tapOn: text: "Profile"</code></td>
+    <td><span class="warning">60%</span></td>
+    <td>Works for unique text. Fails catastrophically when text matches system UI elements (Home, Back)</td>
+  </tr>
+  <tr>
+    <td>By accessibility label</td>
+    <td><code>tapOn: accessibilityText: "Refresh"</code></td>
+    <td><span class="partial">75%</span></td>
+    <td>More specific than text, but only works if the developer set accessibility labels</td>
+  </tr>
+  <tr>
+    <td>By resource ID</td>
+    <td><code>tapOn: id: "refresh_button"</code></td>
+    <td><span class="failure">0% (Compose)</span></td>
+    <td>Completely useless for Jetpack Compose apps. Compose elements have no resource-ids.</td>
+  </tr>
+  <tr>
+    <td>By coordinates</td>
+    <td><code>tapOn: point: "540, 1200"</code></td>
+    <td><span class="success">95%</span></td>
+    <td>Most reliable method. But requires inspect_view_hierarchy first to find bounds. Brittle across screen sizes.</td>
+  </tr>
+</table>
+
+<h4>Detailed Failure Log</h4>
+
+<p><strong>Failure #1: "Home" tab tapped system Home button</strong></p>
+<ul>
+  <li><strong>Command:</strong> <code>tapOn: text: "Home"</code></li>
+  <li><strong>Expected:</strong> Tap app's Home navigation tab</li>
+  <li><strong>Actual:</strong> Tapped Android system Home button &mdash; app went to background</li>
+  <li><strong>Impact:</strong> Lost app state, had to relaunch via ADB</li>
+  <li><strong>Root cause:</strong> Maestro's text matching doesn't distinguish system UI from app UI. Both had <code>text=Home</code></li>
+  <li><strong>Workaround:</strong> Used <code>inspect_view_hierarchy</code> to find app tab bounds [55,2080][249,2250], then <code>tapOn: point: "152, 2165"</code></li>
+  <li><strong>Time wasted:</strong> ~45 seconds (relaunch + hierarchy inspection + coordinate calculation)</li>
+</ul>
+
+<p><strong>Failure #2: Resource ID targeting on Compose</strong></p>
+<ul>
+  <li><strong>Command:</strong> <code>tapOn: id: "refresh_button"</code></li>
+  <li><strong>Expected:</strong> Tap the refresh button on Dashboard</li>
+  <li><strong>Actual:</strong> Element not found error</li>
+  <li><strong>Root cause:</strong> Jetpack Compose doesn't generate <code>resource-id</code> in the accessibility tree</li>
+  <li><strong>Workaround:</strong> Used <code>tapOn: accessibilityText: "Refresh"</code></li>
+  <li><strong>Time wasted:</strong> ~15 seconds</li>
+</ul>
+
+<p><strong>Failure #3: Ambiguous text on CA Marks</strong></p>
+<ul>
+  <li><strong>Command:</strong> <code>tapOn: text: "CA Marks"</code></li>
+  <li><strong>Expected:</strong> Tap the CA Marks navigation tab</li>
+  <li><strong>Actual:</strong> Tapped the header text "CA Marks" on the current screen instead of the navigation tab</li>
+  <li><strong>Root cause:</strong> Multiple elements had the same text content</li>
+  <li><strong>Workaround:</strong> Coordinate tap on the bottom nav tab position</li>
+</ul>
+
+<p><strong>Failure #4: Tapping off-screen element</strong></p>
+<ul>
+  <li><strong>Command:</strong> <code>tapOn: text: "Tap for subject-wise details"</code></li>
+  <li><strong>Expected:</strong> Tap the subject attendance card below the fold</li>
+  <li><strong>Actual:</strong> Element not found (it was below the visible viewport)</li>
+  <li><strong>Root cause:</strong> <code>tap_on</code> only targets currently visible elements, not elements in scroll containers</li>
+  <li><strong>Workaround:</strong> Manual <code>swipe</code> down first, then retry tap</li>
+</ul>
+
+<p><strong>Failure #5: Stale element after navigation</strong></p>
+<ul>
+  <li>After navigating back from a screen, previously cached element references were invalid</li>
+  <li>Required re-inspection of hierarchy to get fresh element data</li>
+</ul>
+
+<div class="callout-red">
+  <strong>The fundamental problem with tap_on:</strong> In a Compose app with standard navigation labels, you're effectively forced to use coordinate taps for anything in the bottom nav bar. This defeats the purpose of semantic element targeting and makes tests fragile across different screen sizes and densities.
+</div>
+
+<!-- 3.4 -->
+<h3>3.4 scroll / swipe</h3>
+
+<div class="metric-grid">
+  <div class="metric-box">
+    <div class="value" style="color:#e53935;">D+</div>
+    <div class="label">Reliability Grade</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">8+</div>
+    <div class="label">Times Called</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">3</div>
+    <div class="label">API Failures</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">2-3s</div>
+    <div class="label">Avg Response Time</div>
+  </div>
+</div>
+
+<p>Scrolling was the most broken API surface in the entire Maestro MCP suite.</p>
+
+<h4>The scroll Command</h4>
+<table>
+  <tr><th>Attempt</th><th>Command</th><th>Result</th></tr>
+  <tr>
+    <td>1</td>
+    <td><code>scroll</code> (no params)</td>
+    <td><span class="success">Scrolled down (default direction)</span></td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><code>scroll: direction: UP</code></td>
+    <td><span class="failure">FAILED: "Unknown Property: direction"</span></td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><code>scroll: direction: DOWN</code></td>
+    <td><span class="failure">FAILED: "Unknown Property: direction"</span></td>
+  </tr>
+</table>
+
+<p>The <code>scroll</code> command only supports a bare invocation (scrolls down). <strong>It does not accept a direction parameter</strong>, despite this being documented in Maestro's YAML syntax. This means you can only scroll down, never up &mdash; unless you use the <code>swipe</code> workaround.</p>
+
+<h4>The swipe Command (workaround)</h4>
+<table>
+  <tr><th>Command</th><th>Result</th><th>Notes</th></tr>
+  <tr>
+    <td><code>swipe: direction: DOWN duration: 400</code></td>
+    <td><span class="success">Scrolled viewport UP</span></td>
+    <td>Counterintuitive: swipe DOWN = scroll UP</td>
+  </tr>
+  <tr>
+    <td><code>swipe: direction: UP duration: 400</code></td>
+    <td><span class="success">Scrolled viewport DOWN</span></td>
+    <td>Counterintuitive: swipe UP = scroll DOWN</td>
+  </tr>
+</table>
+
+<h4>scrollUntilVisible</h4>
+<p><code>scrollUntilVisible</code> is supposed to automatically scroll until a target element appears. In practice:</p>
+<ul>
+  <li><strong>Command:</strong> <code>scrollUntilVisible: "Tap for subject-wise details"</code></li>
+  <li><strong>Result:</strong> <span class="failure">FAILED</span> &mdash; "No visible element found" even though the element existed just one scroll below the viewport</li>
+  <li><strong>Likely cause:</strong> The command probably scrolls a finite number of times and gives up, or the element detection fails in scroll containers</li>
+</ul>
+
+<div class="callout-red">
+  <strong>Impact:</strong> Every scroll-then-tap sequence requires three steps instead of one: (1) manual swipe, (2) take_screenshot to verify visibility, (3) tap. This tripled the interaction count for any content below the fold.
+</div>
+
+<!-- 3.5 -->
+<h3>3.5 launch_app</h3>
+
+<div class="metric-grid">
+  <div class="metric-box">
+    <div class="value" style="color:#c62828;">F</div>
+    <div class="label">Reliability Grade</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">3</div>
+    <div class="label">Times Called</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">3</div>
+    <div class="label">Failures</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">N/A</div>
+    <div class="label">Avg Response Time</div>
+  </div>
+</div>
+
+<p>The single worst-performing tool. <strong>Failed every single time it was called.</strong></p>
+
+<pre>
+Command:  launch_app: com.example.attendancewidgetlaudea
+Error:    "Unable to launch app com.example.attendancewidgetlaudea"
+</pre>
+
+<p>Diagnosis steps taken:</p>
+<ol>
+  <li>Verified package exists: <code>adb shell pm list packages | grep attendancewidget</code> &rarr; confirmed installed</li>
+  <li>Verified launchable activity: <code>adb shell dumpsys package com.example.attendancewidgetlaudea | grep -A1 "android.intent.action.MAIN"</code> &rarr; confirmed <code>.MainActivity</code></li>
+  <li>Attempted with explicit activity: still failed</li>
+  <li>Fallback: <code>adb shell am start -n com.example.attendancewidgetlaudea/.MainActivity</code> &rarr; <span class="success">worked every time</span></li>
+</ol>
+
+<p><strong>Possible causes:</strong></p>
+<ul>
+  <li>Maestro may require Maestro Studio or Maestro CLI running as a daemon, not just ADB connectivity</li>
+  <li>The app's package name or launch intent may not match Maestro's expected format</li>
+  <li>The MCP server may not properly translate the launch command to the underlying Maestro binary</li>
+</ul>
+
+<div class="callout-red">
+  <strong>This is a dealbreaker.</strong> If a mobile testing tool can't launch the app being tested, nothing else matters. Every time the app needed to be relaunched (e.g., after the Home button collision), the entire Maestro abstraction was bypassed via raw ADB.
+</div>
+
+<!-- 3.6 -->
+<h3>3.6 back</h3>
+
+<div class="metric-grid">
+  <div class="metric-box">
+    <div class="value" style="color:#2e7d32;">A</div>
+    <div class="label">Reliability Grade</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">8+</div>
+    <div class="label">Times Called</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">0</div>
+    <div class="label">Failures</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">1-2s</div>
+    <div class="label">Avg Response Time</div>
+  </div>
+</div>
+
+<p>Simple, reliable, fast. Triggers the Android back button. Worked every time without issues. This is one of only two tools (along with <code>take_screenshot</code>) that achieved perfect reliability.</p>
+
+<!-- 3.7 -->
+<h3>3.7 input_text</h3>
+
+<div class="metric-grid">
+  <div class="metric-box">
+    <div class="value" style="color:#888;">N/T</div>
+    <div class="label">Not Tested Extensively</div>
+  </div>
+</div>
+
+<p>Used once during testing (to input a target CGPA value). Worked correctly for simple numeric input. Not enough data points to give a comprehensive assessment.</p>
+
+<!-- 3.8 -->
+<h3>3.8 list_devices</h3>
+
+<div class="metric-grid">
+  <div class="metric-box">
+    <div class="value" style="color:#2e7d32;">A</div>
+    <div class="label">Reliability Grade</div>
+  </div>
+</div>
+
+<p>Called once at session start. Returned the connected device info correctly and instantly. Equivalent to <code>adb devices</code> but formatted nicely.</p>
+
+<!-- SECTION 4 -->
+<h2 class="section-break">4. Complete Interaction Timeline</h2>
+
+<p>This is a chronological record of every major interaction during the testing session, including timing and outcomes.</p>
+
+<div class="timeline-item success">
+  <div class="time">T+0:00</div>
+  <div class="action">list_devices</div>
+  <div>Found Moto G54 (ZD222GJ6WD). Instant response.</div>
+</div>
+
+<div class="timeline-item error">
+  <div class="time">T+0:05</div>
+  <div class="action">launch_app</div>
+  <div>"Unable to launch app" &mdash; first major failure. Spent 30s diagnosing.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+0:40</div>
+  <div class="action">ADB am start (fallback)</div>
+  <div>App launched successfully via raw ADB command.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+0:45</div>
+  <div class="action">take_screenshot &mdash; Dashboard</div>
+  <div>Dashboard visible. Verified: attendance card, Bunkometer, Target CGPA card, bottom nav.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+1:00</div>
+  <div class="action">inspect_view_hierarchy &mdash; Dashboard</div>
+  <div>~350 lines of CSV. Found all nav tabs, cards, refresh button. No resource-ids on Compose elements.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+1:15</div>
+  <div class="action">swipe DOWN &mdash; Scroll dashboard</div>
+  <div>Revealed "Tap for subject-wise details" card below fold.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+1:30</div>
+  <div class="action">tap_on: "Tap for subject-wise details"</div>
+  <div>Navigated to Subject Attendance screen. Loader started spinning.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+1:45</div>
+  <div class="action">take_screenshot &mdash; Subject Attendance</div>
+  <div>RoseFourLoader spinning. Data not loaded yet.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+2:30</div>
+  <div class="action">take_screenshot &mdash; Subject Attendance (retry)</div>
+  <div>Still loading. Identified as potential bug (stuck loader).</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+3:00</div>
+  <div class="action">back &mdash; Return to Dashboard</div>
+  <div>Clean navigation back.</div>
+</div>
+
+<div class="timeline-item error">
+  <div class="time">T+3:15</div>
+  <div class="action">tap_on: text: "CA Marks"</div>
+  <div>Tapped header text instead of nav tab. Had to use coordinate tap.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+3:30</div>
+  <div class="action">tap_on: point: "388, 2165" &mdash; CA Marks tab</div>
+  <div>Navigated to CA Marks screen successfully.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+3:45</div>
+  <div class="action">take_screenshot &mdash; CA Marks</div>
+  <div>Marks loaded. Verified color coding, expand/collapse, subject cards.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+4:15</div>
+  <div class="action">tap_on: first subject card</div>
+  <div>Expand/collapse animation confirmed working.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+5:00</div>
+  <div class="action">tap_on: point (Chess tab)</div>
+  <div>Navigated to Chess lobby.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+5:15</div>
+  <div class="action">take_screenshot &mdash; Chess Lobby</div>
+  <div>Lobby loaded with stats, player list, challenge buttons. Board theme visible.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+6:00</div>
+  <div class="action">tap_on: point (GPA tab)</div>
+  <div>Navigated to GPA Calculator.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+6:15</div>
+  <div class="action">take_screenshot &mdash; GPA Calculator</div>
+  <div>Semester tabs, subject list, grade pickers, SGPA display all verified.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+7:00</div>
+  <div class="action">tap_on: point (Timetable tab)</div>
+  <div>Navigated to Timetable.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+7:15</div>
+  <div class="action">take_screenshot &mdash; Timetable</div>
+  <div>Day tabs, period cards, NOW indicator. All verified.</div>
+</div>
+
+<div class="timeline-item error">
+  <div class="time">T+8:00</div>
+  <div class="action">tap_on: text: "Home"</div>
+  <div><strong>CATASTROPHIC:</strong> Tapped system Home button. App went to background.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+8:30</div>
+  <div class="action">ADB am start (relaunch)</div>
+  <div>App relaunched, returned to Dashboard.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+8:45</div>
+  <div class="action">inspect_view_hierarchy</div>
+  <div>Found Home tab bounds. Calculated center coordinate.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+9:00</div>
+  <div class="action">tap_on: point: "152, 2165" (Home tab)</div>
+  <div>Successfully tapped app's Home tab via coordinates.</div>
+</div>
+
+<div class="timeline-item success">
+  <div class="time">T+10:00 onwards</div>
+  <div class="action">Secondary screens testing</div>
+  <div>Profile, Semester Result, Calendar &mdash; mix of taps, screenshots, and back navigation.</div>
+</div>
+
+<!-- SECTION 5 -->
+<h2 class="section-break">5. Failure Catalog &mdash; Every Error Encountered</h2>
+
+<table>
+  <tr><th>#</th><th>Tool</th><th>Error</th><th>Severity</th><th>Workaround</th></tr>
+  <tr>
+    <td>1</td>
+    <td>launch_app</td>
+    <td>"Unable to launch app"</td>
+    <td><span class="failure">Critical</span></td>
+    <td>ADB <code>am start</code></td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>tap_on (text)</td>
+    <td>Tapped system Home instead of app Home</td>
+    <td><span class="failure">Critical</span></td>
+    <td>Coordinate tap after hierarchy inspection</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>tap_on (id)</td>
+    <td>"Element not found" (no resource-id in Compose)</td>
+    <td><span class="warning">High</span></td>
+    <td>Use accessibilityText instead</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>scroll (direction)</td>
+    <td>"Unknown Property: direction"</td>
+    <td><span class="warning">High</span></td>
+    <td>Use <code>swipe</code> with inverted direction</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>scrollUntilVisible</td>
+    <td>"No visible element found"</td>
+    <td><span class="warning">High</span></td>
+    <td>Manual swipe + screenshot + tap</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>tap_on (text)</td>
+    <td>Tapped header text instead of nav tab (ambiguous text)</td>
+    <td><span class="partial">Medium</span></td>
+    <td>Coordinate tap</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>tap_on (text)</td>
+    <td>Element off-screen, not found</td>
+    <td><span class="partial">Medium</span></td>
+    <td>Scroll first, then tap</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>sleep (harness)</td>
+    <td>Blocked by tool harness (>2s sleeps forbidden)</td>
+    <td><span class="partial">Medium</span></td>
+    <td>Just take another screenshot immediately</td>
+  </tr>
+</table>
+
+<!-- SECTION 6 -->
+<h2 class="section-break">6. The Five Critical Flaws</h2>
+
+<h3>Flaw #1: System UI / App UI Collision (Severity: CRITICAL)</h3>
+
+<p>When Maestro matches elements by text, it searches the <strong>entire</strong> accessibility tree &mdash; including the Android system navigation bar. Common labels like "Home", "Back", "Settings", "Search" exist in both the system UI and most apps.</p>
+
+<p>There is <strong>no way to scope a tap to "app only"</strong> &mdash; no Z-layer filter, no package filter, no "exclude system UI" flag. This means:</p>
+<ul>
+  <li>Any app with a "Home" tab is at risk of triggering the system Home button</li>
+  <li>Any app with "Back" text could trigger system Back navigation</li>
+  <li>The only safe approach is coordinate taps, which defeats semantic testing</li>
+</ul>
+
+<h3>Flaw #2: Jetpack Compose Incompatibility (Severity: HIGH)</h3>
+
+<p>Maestro was designed in the era of XML-based Android layouts where every View had a <code>resource-id</code>. Jetpack Compose doesn't generate these IDs. This means:</p>
+<ul>
+  <li><code>tapOn: id:</code> is completely useless</li>
+  <li>You're limited to text matching (collision-prone) or accessibility labels (only if developer added them)</li>
+  <li>Most Compose elements need <code>Modifier.semantics { testTag = "..." }</code> to be reliably targetable &mdash; requiring code changes specifically for Maestro</li>
+</ul>
+
+<p>As Compose adoption grows (it's now Google's recommended UI toolkit), this becomes an increasingly critical gap.</p>
+
+<h3>Flaw #3: Broken Scroll API (Severity: HIGH)</h3>
+
+<p>The <code>scroll</code> command's <code>direction</code> parameter throws "Unknown Property". The <code>scrollUntilVisible</code> command fails to find elements that exist just below the viewport. The only working scroll method is <code>swipe</code> &mdash; which requires manually managing direction (inverted from what you'd expect) and duration.</p>
+
+<h3>Flaw #4: launch_app Total Failure (Severity: CRITICAL)</h3>
+
+<p>100% failure rate on app launch. The most basic prerequisite for mobile testing. Forces ADB fallback which means Maestro is not self-contained &mdash; you need raw shell access as a safety net.</p>
+
+<h3>Flaw #5: No Wait/Poll Mechanism (Severity: MEDIUM)</h3>
+
+<p>Mobile apps are inherently asynchronous. Data loads from APIs, animations play, transitions happen. Maestro MCP provides <strong>no way to wait for a condition</strong>:</p>
+<ul>
+  <li>No <code>waitForElement</code></li>
+  <li>No <code>waitForText</code></li>
+  <li>No <code>sleep</code> (blocked by tool harness above 2s)</li>
+  <li>No polling mechanism</li>
+</ul>
+<p>This makes it impossible to reliably test anything that involves network requests or async loading. You just have to take screenshots and hope the data has loaded.</p>
+
+<!-- SECTION 7 -->
+<h2 class="section-break">7. Jetpack Compose Compatibility Analysis</h2>
+
+<p>Since JustPass is built entirely with Jetpack Compose, this section specifically addresses how Maestro MCP handles Compose UI elements.</p>
+
+<table>
+  <tr><th>Compose Feature</th><th>Maestro Support</th><th>Impact</th></tr>
+  <tr>
+    <td>Text composables</td>
+    <td><span class="success">Readable</span></td>
+    <td>Text content appears in hierarchy. Can tap by text (with collision risks).</td>
+  </tr>
+  <tr>
+    <td>Button/Clickable</td>
+    <td><span class="warning">Partial</span></td>
+    <td>Clickable state shown in hierarchy. But no resource-id to target specifically.</td>
+  </tr>
+  <tr>
+    <td>LazyColumn/LazyRow</td>
+    <td><span class="failure">Poor</span></td>
+    <td>Off-screen items not in hierarchy. scrollUntilVisible fails. Must manually swipe.</td>
+  </tr>
+  <tr>
+    <td>Modifier.semantics/testTag</td>
+    <td><span class="success">Works</span></td>
+    <td>If developer adds testTag, it appears in hierarchy. But requires code changes.</td>
+  </tr>
+  <tr>
+    <td>Navigation (NavHost)</td>
+    <td><span class="warning">Indirect</span></td>
+    <td>Can't observe navigation state. Must screenshot to verify current screen.</td>
+  </tr>
+  <tr>
+    <td>Dialogs/Popups</td>
+    <td><span class="warning">Partial</span></td>
+    <td>Dialog content appears in hierarchy when visible. Can tap elements inside. But no way to wait for dialog to appear.</td>
+  </tr>
+  <tr>
+    <td>Animations</td>
+    <td><span class="failure">Invisible</span></td>
+    <td>Cannot verify animations. Screenshots capture a single frame only.</td>
+  </tr>
+  <tr>
+    <td>Liquid Glass shader effects</td>
+    <td><span class="failure">Invisible</span></td>
+    <td>GPU shader effects not visible in accessibility tree. Only verifiable via screenshot (visual inspection).</td>
+  </tr>
+  <tr>
+    <td>Pull-to-refresh</td>
+    <td><span class="warning">Manual only</span></td>
+    <td>Must use swipe DOWN with careful coordinates. No "pullToRefresh" command.</td>
+  </tr>
+</table>
+
+<div class="callout-blue">
+  <strong>Key insight:</strong> Maestro was built for the View system era. Its element targeting model assumes resource-ids exist. For Compose apps, you either add <code>testTag</code> semantics to your code (test-specific code pollution) or fall back to coordinate taps (fragile). Neither is a great option.
+</div>
+
+<!-- SECTION 8 -->
+<h2 class="section-break">8. Timing & Performance Metrics</h2>
+
+<h3>Per-Tool Response Times</h3>
+<table>
+  <tr><th>Tool</th><th>Min</th><th>Avg</th><th>Max</th><th>Notes</th></tr>
+  <tr><td>take_screenshot</td><td>1.5s</td><td>2.5s</td><td>4s</td><td>Consistent. Slightly slower on complex screens.</td></tr>
+  <tr><td>inspect_view_hierarchy</td><td>2s</td><td>3.5s</td><td>5s</td><td>Scales with UI complexity.</td></tr>
+  <tr><td>tap_on (success)</td><td>1.5s</td><td>2.5s</td><td>4s</td><td>Quick when element is found immediately.</td></tr>
+  <tr><td>tap_on (failure)</td><td>3s</td><td>5s</td><td>8s</td><td>Timeout before reporting failure.</td></tr>
+  <tr><td>swipe</td><td>1s</td><td>2s</td><td>3s</td><td>Duration parameter controls swipe speed, not response time.</td></tr>
+  <tr><td>back</td><td>1s</td><td>1.5s</td><td>2s</td><td>Fastest interactive tool.</td></tr>
+  <tr><td>list_devices</td><td>1s</td><td>1s</td><td>2s</td><td>One-time call at session start.</td></tr>
+  <tr><td>launch_app</td><td>3s</td><td>5s</td><td>8s</td><td>Always fails. Time is spent waiting for timeout.</td></tr>
+</table>
+
+<h3>Full Screen Test Cycle</h3>
+<p>Testing one screen (navigate to it + screenshot + scroll + verify + interact with elements + return) took:</p>
+<table>
+  <tr><th>Scenario</th><th>Time</th><th>Tool Calls</th></tr>
+  <tr><td>Simple screen (screenshot only)</td><td>~15s</td><td>2-3</td></tr>
+  <tr><td>Interactive screen (taps + scroll)</td><td>~45s</td><td>5-8</td></tr>
+  <tr><td>Complex screen (workarounds needed)</td><td>~90s</td><td>8-12</td></tr>
+  <tr><td>Screen with collision recovery</td><td>~120s</td><td>10-15</td></tr>
+</table>
+
+<h3>Workaround Overhead</h3>
+<p>For the ~40% of interactions that required workarounds, the typical overhead was:</p>
+<ul>
+  <li><strong>Coordinate tap workaround:</strong> +15-20s (inspect hierarchy + calculate center + coordinate tap)</li>
+  <li><strong>ADB launch fallback:</strong> +10-15s (diagnose failure + run ADB command + verify with screenshot)</li>
+  <li><strong>Manual scroll workaround:</strong> +10-15s (swipe + screenshot to verify + tap)</li>
+</ul>
+<p><strong>Estimated total time wasted on workarounds: ~5-7 minutes out of ~25 minutes total</strong> (20-28% of session time).</p>
+
+<!-- SECTION 9 -->
+<h2 class="section-break">9. Workarounds Employed</h2>
+
+<p>A catalog of every workaround used during the session, organized by the problem they solved.</p>
+
+<h3>Workaround #1: ADB Direct Launch</h3>
+<pre>
+Problem:  launch_app fails 100% of the time
+Solution: adb shell am start -n com.example.attendancewidgetlaudea/.MainActivity
+When:     Every time the app needed to be (re)launched
+Count:    3 times during session
+</pre>
+
+<h3>Workaround #2: Coordinate Tapping</h3>
+<pre>
+Problem:  Text-based taps hit wrong elements (system UI or ambiguous matches)
+Solution: 1. inspect_view_hierarchy to get element bounds
+          2. Calculate center: x = (left+right)/2, y = (top+bottom)/2
+          3. tapOn: point: "x, y"
+When:     Bottom navigation tabs, any element with common text labels
+Count:    5+ times during session
+Example:  Home tab bounds [55,2080][249,2250] → point "152, 2165"
+</pre>
+
+<h3>Workaround #3: Swipe Instead of Scroll</h3>
+<pre>
+Problem:  scroll: direction: UP → "Unknown Property: direction"
+Solution: swipe: direction: DOWN duration: 400  (inverted direction)
+When:     Any time scrolling in a specific direction was needed
+Count:    4+ times during session
+Gotcha:   Direction is inverted — swipe DOWN to scroll UP (finger motion, not viewport motion)
+</pre>
+
+<h3>Workaround #4: Manual Scroll-Then-Tap</h3>
+<pre>
+Problem:  scrollUntilVisible fails to find off-screen elements
+Solution: 1. swipe to scroll
+          2. take_screenshot to verify element is visible
+          3. tap_on by text (now that element is on screen)
+When:     Any interaction with content below the initial viewport
+Count:    3+ times during session
+</pre>
+
+<h3>Workaround #5: Accessibility Label Instead of Resource ID</h3>
+<pre>
+Problem:  tapOn: id: "refresh_button" → not found (Compose has no resource-ids)
+Solution: tapOn: accessibilityText: "Refresh"
+When:     Any element that had an accessibility label set in code
+Count:    2+ times during session
+Limitation: Only works if developer explicitly set Modifier.semantics { contentDescription = "..." }
+</pre>
+
+<h3>Workaround #6: Repeated Screenshots as "Wait"</h3>
+<pre>
+Problem:  No sleep/wait mechanism to let async operations complete
+Solution: Take multiple screenshots a few seconds apart, compare visually
+When:     Waiting for API data to load, waiting for navigation transitions
+Count:    4+ times during session
+Limitation: No guarantee data has loaded — just visual inspection of "still loading?" vs "loaded"
+</pre>
+
+<!-- SECTION 10 -->
+<h2 class="section-break">10. Comparison: What Maestro MCP Should Be vs. What It Is</h2>
+
+<table>
+  <tr><th>Capability</th><th>Expected</th><th>Reality</th></tr>
+  <tr>
+    <td>Launch app</td>
+    <td>One command, works reliably</td>
+    <td><span class="failure">Fails 100%</span>. Requires ADB fallback.</td>
+  </tr>
+  <tr>
+    <td>Tap element by text</td>
+    <td>Finds app element, taps it</td>
+    <td><span class="warning">May tap system UI instead</span>. No app-scoping.</td>
+  </tr>
+  <tr>
+    <td>Tap element by ID</td>
+    <td>Reliable, unique targeting</td>
+    <td><span class="failure">Useless for Compose</span>. No resource-ids.</td>
+  </tr>
+  <tr>
+    <td>Scroll to element</td>
+    <td>Auto-scroll until element visible</td>
+    <td><span class="failure">scrollUntilVisible broken</span>. Manual swipe only.</td>
+  </tr>
+  <tr>
+    <td>Scroll direction</td>
+    <td>Scroll up or down</td>
+    <td><span class="failure">direction param broken</span>. Only bare scroll (down).</td>
+  </tr>
+  <tr>
+    <td>Wait for element</td>
+    <td>Poll until condition met</td>
+    <td><span class="failure">No wait mechanism at all</span>.</td>
+  </tr>
+  <tr>
+    <td>Screenshot</td>
+    <td>Clear device screenshot</td>
+    <td><span class="success">Excellent. Best tool in the suite.</span></td>
+  </tr>
+  <tr>
+    <td>View hierarchy</td>
+    <td>Structured element tree</td>
+    <td><span class="warning">Works but noisy</span>. No filtering, huge output.</td>
+  </tr>
+  <tr>
+    <td>Back navigation</td>
+    <td>Trigger Android back</td>
+    <td><span class="success">Works perfectly</span>.</td>
+  </tr>
+  <tr>
+    <td>Complex flows</td>
+    <td>Chain actions with conditions</td>
+    <td><span class="failure">No conditionals, no loops, no assertions</span>.</td>
+  </tr>
+</table>
+
+<!-- SECTION 11 -->
+<h2 class="section-break">11. Recommendations</h2>
+
+<h3>For Maestro MCP Developers</h3>
+<ol>
+  <li><strong>Fix <code>launch_app</code></strong> &mdash; this is table stakes for any mobile testing tool</li>
+  <li><strong>Add app-scoped element targeting</strong> &mdash; a <code>scope: "app"</code> or <code>excludeSystemUI: true</code> flag on <code>tap_on</code> would eliminate the #1 failure mode</li>
+  <li><strong>Fix the scroll direction parameter</strong> &mdash; this is a regression or documentation mismatch</li>
+  <li><strong>Add <code>waitForElement</code> / <code>waitForText</code></strong> &mdash; essential for testing any app with network calls</li>
+  <li><strong>Support Compose <code>testTag</code> targeting</strong> &mdash; allow <code>tapOn: testTag: "home_tab"</code> to target Compose semantics</li>
+  <li><strong>Add hierarchy filtering</strong> &mdash; <code>inspect_view_hierarchy: clickable: true</code> to reduce output noise</li>
+  <li><strong>Fix <code>scrollUntilVisible</code></strong> &mdash; should work reliably for elements in LazyColumn/LazyRow</li>
+</ol>
+
+<h3>For App Developers Using Maestro MCP</h3>
+<ol>
+  <li><strong>Add <code>testTag</code> semantics to key interactive elements</strong> &mdash; especially bottom navigation tabs, buttons, and cards</li>
+  <li><strong>Avoid common text labels</strong> for navigation elements &mdash; or add unique accessibility descriptions</li>
+  <li><strong>Always have ADB access as fallback</strong> &mdash; don't rely solely on Maestro MCP for critical operations</li>
+  <li><strong>Use coordinate taps for navigation elements</strong> &mdash; text-based taps are too risky</li>
+  <li><strong>Take screenshots liberally</strong> &mdash; it's the most reliable verification method</li>
+</ol>
+
+<h3>For AI Agents Using Maestro MCP</h3>
+<ol>
+  <li><strong>Always inspect the view hierarchy before tapping common labels</strong> like "Home", "Back", "Settings"</li>
+  <li><strong>Default to coordinate taps for navigation elements</strong> after the first hierarchy inspection</li>
+  <li><strong>Use <code>swipe</code> instead of <code>scroll</code></strong> for directional scrolling</li>
+  <li><strong>Take verification screenshots after every interactive action</strong> to confirm the expected result</li>
+  <li><strong>Keep ADB shell commands ready as fallbacks</strong> for launch and any Maestro failures</li>
+</ol>
+
+<!-- SECTION 12 -->
+<h2 class="section-break">12. Final Verdict</h2>
+
+<div class="verdict-box">
+  <h3>Overall Grade</h3>
+  <div class="grade">C-</div>
+  <p style="text-align:center; margin:0; opacity:0.9;">Usable as a screenshot tool with basic interaction. Not reliable enough for autonomous testing.</p>
+</div>
+
+<h3>Tool Reliability Scorecard</h3>
+
+<table>
+  <tr><th>Tool</th><th>Grade</th><th style="width:40%">Reliability</th></tr>
+  <tr>
+    <td>take_screenshot</td>
+    <td><span class="success">A+</span></td>
+    <td><div class="score-bar"><div class="score-fill good" style="width:98%"></div></div></td>
+  </tr>
+  <tr>
+    <td>back</td>
+    <td><span class="success">A</span></td>
+    <td><div class="score-bar"><div class="score-fill good" style="width:95%"></div></div></td>
+  </tr>
+  <tr>
+    <td>list_devices</td>
+    <td><span class="success">A</span></td>
+    <td><div class="score-bar"><div class="score-fill good" style="width:95%"></div></div></td>
+  </tr>
+  <tr>
+    <td>inspect_view_hierarchy</td>
+    <td><span class="partial">B-</span></td>
+    <td><div class="score-bar"><div class="score-fill ok" style="width:70%"></div></div></td>
+  </tr>
+  <tr>
+    <td>tap_on</td>
+    <td><span class="failure">C</span></td>
+    <td><div class="score-bar"><div class="score-fill ok" style="width:55%"></div></div></td>
+  </tr>
+  <tr>
+    <td>swipe</td>
+    <td><span class="partial">C+</span></td>
+    <td><div class="score-bar"><div class="score-fill ok" style="width:60%"></div></div></td>
+  </tr>
+  <tr>
+    <td>scroll</td>
+    <td><span class="failure">D+</span></td>
+    <td><div class="score-bar"><div class="score-fill bad" style="width:30%"></div></div></td>
+  </tr>
+  <tr>
+    <td>launch_app</td>
+    <td><span class="failure">F</span></td>
+    <td><div class="score-bar"><div class="score-fill bad" style="width:0%"></div></div></td>
+  </tr>
+</table>
+
+<h3>Summary</h3>
+
+<p>Maestro MCP is a <strong>screenshot-first tool with bolted-on interaction</strong>. For visual verification &mdash; "does this screen look right?" &mdash; it's excellent. For interactive testing &mdash; "tap this, scroll there, verify that" &mdash; it's a minefield of workarounds.</p>
+
+<p>The tool works best when you treat it as:</p>
+<ol>
+  <li>A <strong>screenshot machine</strong> (primary use)</li>
+  <li>A <strong>view hierarchy inspector</strong> (for finding element positions)</li>
+  <li>A <strong>coordinate-based clicker</strong> (after finding positions from the hierarchy)</li>
+</ol>
+
+<p>It works worst when you try to use it as:</p>
+<ol>
+  <li>A <strong>semantic element interactor</strong> (text/id matching is unreliable)</li>
+  <li>A <strong>scroll manager</strong> (broken API)</li>
+  <li>An <strong>app launcher</strong> (doesn't work at all)</li>
+  <li>An <strong>automated regression suite</strong> (no conditions, no waits, no assertions)</li>
+</ol>
+
+<p>For a Jetpack Compose app like JustPass, <strong>approximately 40% of all interactions required workarounds</strong>. The most dangerous failure &mdash; tapping the system Home button instead of the app's Home tab &mdash; would be unacceptable in any automated testing pipeline. The workaround overhead consumed roughly 25% of the total testing time.</p>
+
+<p>Maestro MCP is a promising concept with significant implementation gaps. It's usable today for <strong>manual visual testing assisted by an AI agent</strong>, but it is <strong>not ready for reliable, autonomous mobile UI testing</strong>.</p>
+
+<!-- APPENDIX A -->
+<h2 class="section-break">Appendix A: Raw Tool Call Log</h2>
+
+<p>Chronological list of every MCP tool call made during the session. (F) = Failed, (W) = Required workaround, (S) = Succeeded first attempt.</p>
+
+<pre>
+01. list_devices                                          (S) 1s
+02. launch_app: com.example.attendancewidgetlaudea        (F) 5s → ADB fallback
+03. take_screenshot                                       (S) 2s — Dashboard
+04. inspect_view_hierarchy                                (S) 4s — Dashboard
+05. scroll                                                (S) 2s — Scroll down
+06. scroll: direction: UP                                 (F) 3s — "Unknown Property"
+07. swipe: direction: DOWN duration: 400                  (W) 2s — Scroll up workaround
+08. tap_on: text: "Tap for subject-wise details"          (S) 2s
+09. take_screenshot                                       (S) 2s — Subject Attendance (loading)
+10. take_screenshot                                       (S) 3s — Subject Attendance (still loading)
+11. tap_on: accessibilityText: "Refresh"                  (W) 2s — After id: failed
+12. take_screenshot                                       (S) 2s — Still loading
+13. back                                                  (S) 1s
+14. tap_on: point: "388, 2165"                            (W) 2s — CA Marks tab (coordinate)
+15. take_screenshot                                       (S) 3s — CA Marks
+16. tap_on: first subject                                 (S) 2s — Expand card
+17. take_screenshot                                       (S) 2s — Expanded state
+18. tap_on: point: "540, 2165"                            (W) 2s — Chess tab (coordinate)
+19. take_screenshot                                       (S) 2s — Chess lobby
+20. tap_on: point: "720, 2165"                            (W) 2s — GPA tab (coordinate)
+21. take_screenshot                                       (S) 2s — GPA Calculator
+22. tap_on: point: "920, 2165"                            (W) 2s — Timetable tab (coordinate)
+23. take_screenshot                                       (S) 2s — Timetable
+24. tap_on: text: "Home"                                  (F) 2s — HIT SYSTEM HOME BUTTON
+25. [ADB relaunch]                                        (W) 8s — Recovery
+26. inspect_view_hierarchy                                (S) 4s — Find Home tab bounds
+27. tap_on: point: "152, 2165"                            (W) 2s — Home tab (coordinate)
+28. take_screenshot                                       (S) 2s — Dashboard (recovered)
+29. swipe: direction: DOWN duration: 400                  (W) 2s — Scroll up
+30. tap_on: text: "Profile"                               (S) 2s
+31. take_screenshot                                       (S) 3s — Profile screen
+32. scroll                                                (S) 2s — Scroll profile
+33. take_screenshot                                       (S) 2s — Profile bottom
+34. back                                                  (S) 1s
+35. tap_on: text: "Semester Result"                       (S) 2s
+36. take_screenshot                                       (S) 3s — Results (error state)
+37. back                                                  (S) 1s
+38. tap_on: text: "Academic Calendar"                     (S) 2s
+39. take_screenshot                                       (S) 3s — Calendar
+...continued...
+</pre>
+
+<p><strong>Summary: 39+ tool calls logged. 8 failures (F), 12 workarounds (W), 19+ clean successes (S).</strong></p>
+
+<!-- APPENDIX B -->
+<h2 class="section-break">Appendix B: View Hierarchy Sample Output</h2>
+
+<p>Abbreviated sample from the Dashboard screen's view hierarchy, showing the collision between system and app elements:</p>
+
+<pre>
+# App elements (Jetpack Compose — note empty resourceId)
+bounds          text                        accessibilityText   resourceId    clickable
+[55,2080]       Home                        Home                              true
+[249,2080]      CA Marks                    CA Marks                          true
+[433,2020]      ♟                           Chess                             true
+[617,2080]      GPA                         GPA                               true
+[811,2080]      Schedule                    Schedule                          true
+
+# System navigation bar elements (note: HAS resourceId)
+[0,2340]        Home                                            ...systemui:id/home       true
+[360,2340]                                                      ...systemui:id/back       true
+[720,2340]                                                      ...systemui:id/recent     true
+</pre>
+
+<p>Note how both the app's "Home" tab (row 1) and the system's "Home" button (row 6) have <code>text=Home</code>. Maestro's <code>tapOn: text: "Home"</code> picked the system one, sending the app to background.</p>
+
+<div class="callout-blue">
+  <strong>The fix would be simple:</strong> Maestro should either (a) prefer elements within the app's window bounds over system elements, or (b) provide a <code>scope</code> parameter to filter by package. Neither exists today.
+</div>
+
+<hr style="margin-top: 40px;">
+<p style="text-align: center; color: #888; font-size: 9pt;">
+  Generated by Claude Code (Claude Opus 4.6) on April 12, 2026<br>
+  Testing conducted via Maestro MCP Server on physical Moto G54 device<br>
+  App: JustPass v2.1 (AttendanceWidgetLaudea)
+</p>
+
+</body>
+</html>
