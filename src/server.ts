@@ -18,6 +18,7 @@ import { swipeTool } from "./tools/swipe.js";
 import { homeTool } from "./tools/home.js";
 import { recentsTool } from "./tools/recents.js";
 import { installTool } from "./tools/install.js";
+import { bridgeTool } from "./tools/bridge.js";
 
 export function createServer(): FastMCP {
   const server = new FastMCP({
@@ -47,6 +48,9 @@ export function createServer(): FastMCP {
   server.addTool(homeTool);
   server.addTool(recentsTool);
   server.addTool(installTool);
+
+  // Compose Bridge (Phase 4 — fast path)
+  server.addTool(bridgeTool);
 
   return server;
 }

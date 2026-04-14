@@ -2,6 +2,12 @@ import { XMLParser } from "fast-xml-parser";
 import { adbShell } from "./client.js";
 import { filterByPackage } from "../filters/app-scope.js";
 import { extractTestTag } from "../filters/compose.js";
+import {
+  isBridgeConnected,
+  bridgeHierarchy,
+  bridgeFind,
+  type BridgeNode,
+} from "../bridge/compose-client.js";
 
 export interface UiElement {
   index: number;
@@ -97,7 +103,35 @@ async function restoreAnimations(): Promise<void> {
   ]);
 }
 
+function bridgeNodeToUiElement(node: BridgeNode): UiElement {
+  return {
+    index: node.index,
+    text: node.text ?? "",
+    contentDesc: node.contentDesc ?? "",
+    testTag: node.testTag ?? "",
+    resourceId: "",
+    className: "",
+    packageName: "",
+    clickable: node.clickable ?? false,
+    scrollable: node.scrollable ?? false,
+    bounds: node.bounds ?? { left: 0, top: 0, right: 0, bottom: 0 },
+    centerX: node.centerX,
+    centerY: node.centerY,
+  };
+}
+
 export async function getHierarchy(): Promise<UiElement[]> {
+  // Fast path: Compose bridge (<10ms)
+  if (isBridgeConnected()) {
+    try {
+      const nodes = await bridgeHierarchy();
+      return nodes.map(bridgeNodeToUiElement);
+    } catch {
+      // Bridge failed — fall through to ADB path
+    }
+  }
+
+  // Slow path: uiautomator dump (2-5s)
   const dumpPath = "/sdcard/android-pilot-dump.xml";
   const maxRetries = 3;
 
@@ -153,6 +187,23 @@ export async function findElement(
   selector: { testTag?: string; text?: string; index?: number },
   appPackage?: string
 ): Promise<UiElement | null> {
+  // Fast path: direct bridge search for text/testTag (<1ms)
+  if (isBridgeConnected() && (selector.text || selector.testTag)) {
+    try {
+      const opts: { text?: string; testTag?: string } = {};
+      if (selector.testTag) opts.testTag = selector.testTag;
+      if (selector.text) opts.text = selector.text;
+      const nodes = await bridgeFind(opts);
+      if (nodes.length > 0) {
+        return bridgeNodeToUiElement(nodes[0]);
+      }
+      return null;
+    } catch {
+      // Fall through to ADB path
+    }
+  }
+
+  // Slow path: full hierarchy dump + filter
   const elements = await getAppScopedHierarchy(appPackage);
 
   if (selector.index !== undefined) {

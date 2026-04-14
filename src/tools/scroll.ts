@@ -3,6 +3,7 @@ import { swipe } from "../adb/input.js";
 import { getDeviceInfo, getForegroundPackage } from "../adb/client.js";
 import { findElement } from "../adb/hierarchy.js";
 import { pollUntil } from "../util/poll.js";
+import { isBridgeConnected, bridgeScroll } from "../bridge/compose-client.js";
 
 export const scrollTool = {
   name: "scroll" as const,
@@ -56,6 +57,19 @@ export const scrollTool = {
     };
 
     if (args.untilText) {
+      // Fast path: bridge scrollToNode (single call, automatic)
+      if (isBridgeConnected()) {
+        try {
+          const resp = await bridgeScroll({ untilText: args.untilText });
+          if (resp.status === "ok") {
+            return `${resp.message} [bridge, ${resp.elapsed_ms ?? "?"}ms]`;
+          }
+        } catch {
+          // Fall through to ADB path
+        }
+      }
+
+      // Slow path: repeated ADB scroll + hierarchy dump
       const pkg = await getForegroundPackage();
       const maxScrolls = args.maxScrolls ?? 10;
 

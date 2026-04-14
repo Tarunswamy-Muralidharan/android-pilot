@@ -2,6 +2,7 @@ import { z } from "zod";
 import { pollUntil } from "../util/poll.js";
 import { getAppScopedHierarchy, findElement } from "../adb/hierarchy.js";
 import { getForegroundPackage } from "../adb/client.js";
+import { isBridgeConnected, bridgeWaitForText, bridgeWaitForGone } from "../bridge/compose-client.js";
 
 export const waitTool = {
   name: "wait" as const,
@@ -38,9 +39,33 @@ export const waitTool = {
     timeout?: number;
     interval?: number;
   }) => {
-    const pkg = await getForegroundPackage();
     const timeout = args.timeout ?? 5000;
     const interval = args.interval ?? 500;
+
+    // Fast path: bridge-native wait (event-driven, not polling)
+    if (isBridgeConnected()) {
+      try {
+        if (args.forText) {
+          const resp = await bridgeWaitForText(args.forText, timeout);
+          if (resp.status === "ok") {
+            return `Found "${args.forText}" at (${resp.centerX}, ${resp.centerY}) [bridge, ${resp.elapsed_ms ?? "?"}ms]`;
+          }
+          return { content: [{ type: "text" as const, text: `Timeout: "${args.forText}" not found after ${timeout}ms` }], isError: true };
+        }
+        if (args.forGone) {
+          const resp = await bridgeWaitForGone(args.forGone, timeout);
+          if (resp.status === "ok") {
+            return `"${args.forGone}" disappeared [bridge, ${resp.elapsed_ms ?? "?"}ms]`;
+          }
+          return { content: [{ type: "text" as const, text: `Timeout: "${args.forGone}" still visible after ${timeout}ms` }], isError: true };
+        }
+      } catch {
+        // Fall through to ADB path
+      }
+    }
+
+    // Slow path: polling via ADB hierarchy dump
+    const pkg = await getForegroundPackage();
 
     if (args.forText) {
       const { result, elapsed } = await pollUntil(
